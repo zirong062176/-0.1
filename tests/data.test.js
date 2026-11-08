@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { emptyData, MemoryStore, LocalStore, makeBackup, validateBackup, applyWalletRecord, getWalletBalance, calcLoanBalance, calcLoanBalances, getWalletAssets, getWalletCategoryBreakdown, getWalletMonthlySeries } from '../src/data.js';
+import { emptyData, MemoryStore, LocalStore, makeBackup, validateBackup, applyWalletRecord, getWalletBalance, calcLoanBalance, calcLoanBalances, getWalletAssets, getProjectProgress, getReadingProgress, isTaskOverdue, getWalletCategoryBreakdown, getWalletMonthlySeries } from '../src/data.js';
 
 test('初始数据包含全部模块', () => {
   const data = emptyData();
@@ -77,4 +77,28 @@ test('钱包月度趋势返回连续六个月收入支出', () => {
   const series = getWalletMonthlySeries([{ date: '2026-11-01', type: '收入', mmk: 500 }, { date: '2026-11-02', type: '支出', mmk: 200 }], '2026-11', 3);
   assert.deepEqual(series.map(x => x.month), ['2026-09', '2026-10', '2026-11']);
   assert.deepEqual(series[2], { month: '2026-11', income: 500, expense: 200, balance: 300 });
+});
+
+test('阅读进度优先按当前页和总页数计算', () => {
+  assert.equal(getReadingProgress({ currentPage: 25, totalPages: 100 }), 25);
+  assert.equal(getReadingProgress({ progress: 40 }), 40);
+  assert.equal(getReadingProgress({ currentPage: 120, totalPages: 100 }), 100);
+});
+
+test('项目进度累计已完成任务进度并限制为100%', () => {
+  const tasks = [
+    { projectId: 'p1', status: '已完成', progress: 35 },
+    { projectId: 'p1', status: '已完成', progress: 70 },
+    { projectId: 'p1', status: '进行中', progress: 90 },
+    { projectId: 'p2', status: '已完成', progress: 20, deletedAt: '2026-01-01' }
+  ];
+  assert.equal(getProjectProgress('p1', tasks), 100);
+  assert.equal(getProjectProgress('p2', tasks), 0);
+});
+
+test('进行任务超过预期完成时间会标记逾期，完成后不再逾期', () => {
+  const reference = new Date('2026-11-08T12:00:00');
+  assert.equal(isTaskOverdue({ status: '进行中', expectedAt: '2026-11-08T11:59' }, reference), true);
+  assert.equal(isTaskOverdue({ status: '已完成', expectedAt: '2026-11-08T11:59' }, reference), false);
+  assert.equal(isTaskOverdue({ status: '进行中', expectedAt: '2026-11-08T13:00' }, reference), false);
 });

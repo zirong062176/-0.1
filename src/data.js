@@ -40,6 +40,25 @@ export const calcLoanBalances = (records, name = '') => records.filter(r => !r.d
 
 export const calcLoanBalance = (records, name = '') => calcLoanBalances(records, name).mmk;
 
+export const clampProgress = (value) => Math.max(0, Math.min(100, Number(value || 0)));
+
+export const getReadingProgress = (item = {}) => {
+  const totalPages = Number(item.totalPages || 0);
+  if (totalPages > 0) return clampProgress(Number(item.currentPage || 0) / totalPages * 100);
+  return clampProgress(item.progress);
+};
+
+export const getProjectProgress = (projectId, tasks = []) => clampProgress(tasks.filter((task) => !task.deletedAt && task.projectId === projectId && task.status === '已完成').reduce((sum, task) => sum + clampProgress(task.progress), 0));
+
+export const isTaskOverdue = (task = {}, reference = new Date()) => {
+  if (!task || task.status === '已完成') return false;
+  const deadline = task.expectedAt || task.expectedCompletionAt || task.expectedDate || task.dueDate;
+  if (!deadline) return false;
+  const normalized = String(deadline).length === 10 ? `${deadline}T23:59:59` : deadline;
+  const timestamp = new Date(normalized).getTime();
+  return Number.isFinite(timestamp) && timestamp < new Date(reference).getTime();
+};
+
 export const getWalletAssets = (records, manualRate = 3500) => {
   const cash = getWalletBalance(records);
   const loan = calcLoanBalances(records);

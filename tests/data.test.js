@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { emptyData, MemoryStore, LocalStore, makeBackup, validateBackup, applyWalletRecord, getWalletBalance, calcLoanBalance, getWalletCategoryBreakdown, getWalletMonthlySeries } from '../src/data.js';
+import { emptyData, MemoryStore, LocalStore, makeBackup, validateBackup, applyWalletRecord, getWalletBalance, calcLoanBalance, calcLoanBalances, getWalletCategoryBreakdown, getWalletMonthlySeries } from '../src/data.js';
 
 test('初始数据包含全部模块', () => {
   const data = emptyData();
@@ -40,7 +40,8 @@ test('钱包余额支持按日期计算，借还款按人计算净借出', () =>
     { date: '2026-02-03', type: '还入', consumer: '小明', mmk: 10, usd: 0 }
   ];
   assert.deepEqual(getWalletBalance(records, '2026-02-01'), { mmk: 100, usd: 1 });
-  assert.equal(calcLoanBalance(records, '小明'), 40);
+  assert.equal(calcLoanBalance(records, '小明'), -40);
+  assert.deepEqual(calcLoanBalances(records, '小明'), { mmk: -40, usd: -2 });
 });
 
 test('钱包分类分析会按月份计算金额和占比', () => {

@@ -36,7 +36,9 @@ export const applyWalletRecord = (balance, record) => {
 
 export const getWalletBalance = (records, beforeDate = '') => records.filter(r => !r.deletedAt && (!beforeDate || r.date < beforeDate)).sort((a, b) => a.date.localeCompare(b.date)).reduce(applyWalletRecord, { mmk: 0, usd: 0 });
 
-export const calcLoanBalance = (records, name = '') => records.filter(r => !r.deletedAt && ['借出', '还入'].includes(r.type) && (!name || r.consumer === name)).reduce((sum, r) => sum + (r.type === '借出' ? 1 : -1) * Number(r.mmk || 0), 0);
+export const calcLoanBalances = (records, name = '') => records.filter(r => !r.deletedAt && ['借出', '还入'].includes(r.type) && (!name || r.consumer === name)).reduce((sum, r) => { const sign = r.type === '借出' ? -1 : 1; return { mmk: sum.mmk + sign * Number(r.mmk || 0), usd: sum.usd + sign * Number(r.usd || 0) }; }, { mmk: 0, usd: 0 });
+
+export const calcLoanBalance = (records, name = '') => calcLoanBalances(records, name).mmk;
 
 export const getWalletCategoryBreakdown = (records, month, kind = '支出') => {
   const rows = records.filter(r => !r.deletedAt && r.date?.startsWith(month) && r.type === kind);

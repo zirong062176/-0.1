@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { emptyData, MemoryStore, LocalStore, makeBackup, validateBackup, applyWalletRecord, getWalletBalance, calcLoanBalance } from '../src/data.js';
+import { emptyData, MemoryStore, LocalStore, makeBackup, validateBackup, applyWalletRecord, getWalletBalance, calcLoanBalance, getWalletCategoryBreakdown, getWalletMonthlySeries } from '../src/data.js';
 
 test('初始数据包含全部模块', () => {
   const data = emptyData();
@@ -41,4 +41,22 @@ test('钱包余额支持按日期计算，借还款按人计算净借出', () =>
   ];
   assert.deepEqual(getWalletBalance(records, '2026-02-01'), { mmk: 100, usd: 1 });
   assert.equal(calcLoanBalance(records, '小明'), 40);
+});
+
+test('钱包分类分析会按月份计算金额和占比', () => {
+  const rows = [
+    { date: '2026-11-01', type: '支出', category: '生活', mmk: 300 },
+    { date: '2026-11-02', type: '支出', category: '娱乐', mmk: 100 },
+    { date: '2026-11-03', type: '收入', category: '工作', mmk: 500 }
+  ];
+  assert.deepEqual(getWalletCategoryBreakdown(rows, '2026-11', '支出'), [
+    { category: '生活', amount: 300, percent: 75 },
+    { category: '娱乐', amount: 100, percent: 25 }
+  ]);
+});
+
+test('钱包月度趋势返回连续六个月收入支出', () => {
+  const series = getWalletMonthlySeries([{ date: '2026-11-01', type: '收入', mmk: 500 }, { date: '2026-11-02', type: '支出', mmk: 200 }], '2026-11', 3);
+  assert.deepEqual(series.map(x => x.month), ['2026-09', '2026-10', '2026-11']);
+  assert.deepEqual(series[2], { month: '2026-11', income: 500, expense: 200, balance: 300 });
 });

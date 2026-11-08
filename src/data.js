@@ -1,7 +1,7 @@
 export const SCHEMA_VERSION = 1;
 
 export const emptyData = () => ({
-  settings: { theme: 'light', weekStartsOn: 1, manualRate: 3500, dashboardCards: ['diet', 'fitness', 'work', 'wallet', 'reading'] },
+  settings: { theme: 'light', weekStartsOn: 1, manualRate: 3500, walletCategories: ['生活', '娱乐', '工作', '家人', '交通', '住房', '医疗', '学习', '旅行', '其他'], dashboardCards: ['diet', 'fitness', 'work', 'wallet', 'reading'] },
   dailyPlans: [], memos: [], dietEntries: [], fitnessSessions: [], fitnessExercises: [],
   workProjects: [], workTasks: [], walletRecords: [], readingItems: [], readingLogs: [],
   reviewRecords: [], backupLogs: []
@@ -17,7 +17,7 @@ export class MemoryStore {
 
 export class LocalStore {
   constructor(key = 'personal-life-app-v1', storage = globalThis.localStorage) { this.key = key; this.storage = storage; this.data = this.load(); }
-  load() { try { const raw = this.storage?.getItem(this.key); return raw ? { ...emptyData(), ...JSON.parse(raw) } : emptyData(); } catch { return emptyData(); } }
+  load() { try { const raw = this.storage?.getItem(this.key); if (!raw) return emptyData(); const saved = JSON.parse(raw); return { ...emptyData(), ...saved, settings: { ...emptyData().settings, ...(saved.settings || {}) } }; } catch { return emptyData(); } }
   save() { this.storage?.setItem(this.key, JSON.stringify(this.data)); return this.data; }
   replace(data) { this.data = structuredClone(data); this.save(); return this.data; }
   snapshot() { return structuredClone(this.data); }
@@ -37,6 +37,19 @@ export const applyWalletRecord = (balance, record) => {
 export const getWalletBalance = (records, beforeDate = '') => records.filter(r => !r.deletedAt && (!beforeDate || r.date < beforeDate)).sort((a, b) => a.date.localeCompare(b.date)).reduce(applyWalletRecord, { mmk: 0, usd: 0 });
 
 export const calcLoanBalance = (records, name = '') => records.filter(r => !r.deletedAt && ['借出', '还入'].includes(r.type) && (!name || r.consumer === name)).reduce((sum, r) => sum + (r.type === '借出' ? 1 : -1) * Number(r.mmk || 0), 0);
+
+export const getWalletCategoryBreakdown = (records, month, kind = '支出') => {
+  const rows = records.filter(r => !r.deletedAt && r.date?.startsWith(month) && r.type === kind);
+  const totals = rows.reduce((map, row) => { const key = row.category || '其他'; map[key] = (map[key] || 0) + Number(row.mmk || 0); return map; }, {});
+  const total = Object.values(totals).reduce((sum, value) => sum + value, 0);
+  return Object.entries(totals).sort((a, b) => b[1] - a[1]).map(([category, amount]) => ({ category, amount, percent: total ? amount / total * 100 : 0 }));
+};
+
+export const getWalletMonthlySeries = (records, endMonth, count = 6) => {
+  const end = new Date(`${endMonth}-01T12:00:00`); const result = [];
+  for (let i = count - 1; i >= 0; i -= 1) { const date = new Date(end); date.setMonth(end.getMonth() - i); const month = date.toISOString().slice(0, 7); const rows = records.filter(r => !r.deletedAt && r.date?.startsWith(month)); const income = rows.filter(r => r.type === '收入').reduce((n, r) => n + Number(r.mmk || 0), 0); const expense = rows.filter(r => r.type === '支出').reduce((n, r) => n + Number(r.mmk || 0), 0); result.push({ month, income, expense, balance: income - expense }); }
+  return result;
+};
 
 export const validateBackup = (backup) => {
   if (!backup || typeof backup !== 'object' || backup.schemaVersion !== SCHEMA_VERSION || !backup.data) throw new Error('备份文件格式或版本无效');

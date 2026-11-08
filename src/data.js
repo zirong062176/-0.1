@@ -40,6 +40,15 @@ export const calcLoanBalances = (records, name = '') => records.filter(r => !r.d
 
 export const calcLoanBalance = (records, name = '') => calcLoanBalances(records, name).mmk;
 
+export const getWalletAssets = (records, manualRate = 3500) => {
+  const cash = getWalletBalance(records);
+  const loan = calcLoanBalances(records);
+  const receivable = { mmk: -loan.mmk, usd: -loan.usd };
+  const usdAsset = cash.usd + receivable.usd;
+  const mmkAsset = usdAsset * Number(manualRate || 3500) + cash.mmk + receivable.mmk;
+  return { cash, loan, receivable, usdAsset, mmkAsset, rate: Number(manualRate || 3500) };
+};
+
 export const getWalletCategoryBreakdown = (records, month, kind = '支出') => {
   const rows = records.filter(r => !r.deletedAt && r.date?.startsWith(month) && r.type === kind);
   const totals = rows.reduce((map, row) => { const key = row.category || '其他'; map[key] = (map[key] || 0) + Number(row.mmk || 0); return map; }, {});
@@ -49,7 +58,7 @@ export const getWalletCategoryBreakdown = (records, month, kind = '支出') => {
 
 export const getWalletMonthlySeries = (records, endMonth, count = 6) => {
   const end = new Date(`${endMonth}-01T12:00:00`); const result = [];
-  for (let i = count - 1; i >= 0; i -= 1) { const date = new Date(end); date.setMonth(end.getMonth() - i); const month = date.toISOString().slice(0, 7); const rows = records.filter(r => !r.deletedAt && r.date?.startsWith(month)); const income = rows.filter(r => r.type === '收入').reduce((n, r) => n + Number(r.mmk || 0), 0); const expense = rows.filter(r => r.type === '支出').reduce((n, r) => n + Number(r.mmk || 0), 0); result.push({ month, income, expense, balance: income - expense }); }
+  for (let i = count - 1; i >= 0; i -= 1) { const date = new Date(end); date.setMonth(end.getMonth() - i); const month = date.toISOString().slice(0, 7); const next = new Date(date); next.setMonth(date.getMonth() + 1); const nextMonth = next.toISOString().slice(0, 7); const rows = records.filter(r => !r.deletedAt && r.date?.startsWith(month)); const income = rows.filter(r => r.type === '收入').reduce((n, r) => n + Number(r.mmk || 0), 0); const expense = rows.filter(r => r.type === '支出').reduce((n, r) => n + Number(r.mmk || 0), 0); const balance = getWalletBalance(records, nextMonth).mmk; result.push({ month, income, expense, balance }); }
   return result;
 };
 

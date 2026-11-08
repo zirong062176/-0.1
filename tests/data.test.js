@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { emptyData, MemoryStore, LocalStore, makeBackup, validateBackup, applyWalletRecord, getWalletBalance, calcLoanBalance, calcLoanBalances, getWalletCategoryBreakdown, getWalletMonthlySeries } from '../src/data.js';
+import { emptyData, MemoryStore, LocalStore, makeBackup, validateBackup, applyWalletRecord, getWalletBalance, calcLoanBalance, calcLoanBalances, getWalletAssets, getWalletCategoryBreakdown, getWalletMonthlySeries } from '../src/data.js';
 
 test('初始数据包含全部模块', () => {
   const data = emptyData();
@@ -42,6 +42,23 @@ test('钱包余额支持按日期计算，借还款按人计算净借出', () =>
   assert.deepEqual(getWalletBalance(records, '2026-02-01'), { mmk: 100, usd: 1 });
   assert.equal(calcLoanBalance(records, '小明'), -40);
   assert.deepEqual(calcLoanBalances(records, '小明'), { mmk: -40, usd: -2 });
+});
+
+test('下个月结余会承接上月余额，资产会把未还借款计入当前汇率换算', () => {
+  const records = [
+    { date: '2026-11-30', type: '收入', mmk: 4109720, usd: 1000 },
+    { date: '2026-12-01', type: '收入', mmk: 50000, usd: 0 },
+    { date: '2026-12-02', type: '借出', consumer: '小王', mmk: 300000, usd: 500 },
+    { date: '2026-12-03', type: '还入', consumer: '小王', mmk: 0, usd: 400 }
+  ];
+  assert.deepEqual(getWalletBalance(records, '2026-12-01'), { mmk: 4109720, usd: 1000 });
+  assert.deepEqual(getWalletBalance(records, '2027-01-01'), { mmk: 3859720, usd: 900 });
+  assert.equal(getWalletMonthlySeries(records, '2026-12', 2)[1].balance, 3859720);
+  const assets = getWalletAssets(records, 3770);
+  assert.deepEqual(assets.loan, { mmk: -300000, usd: -100 });
+  assert.deepEqual(assets.receivable, { mmk: 300000, usd: 100 });
+  assert.equal(assets.usdAsset, 1000);
+  assert.equal(assets.mmkAsset, 4159720 + 1000 * 3770);
 });
 
 test('钱包分类分析会按月份计算金额和占比', () => {

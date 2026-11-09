@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { emptyData, MemoryStore, LocalStore, makeBackup, validateBackup, applyWalletRecord, getWalletBalance, calcLoanBalance, calcLoanBalances, getWalletAssets, getProjectProgress, getReadingProgress, isTaskOverdue, getWalletCategoryBreakdown, getWalletMonthlySeries } from '../src/data.js';
+import { emptyData, MemoryStore, LocalStore, makeBackup, validateBackup, applyWalletRecord, getWalletBalance, calcLoanBalance, calcLoanBalances, getWalletAssets, getProjectProgress, getReadingProgress, isTaskLate, isTaskOverdue, getWalletCategoryBreakdown, getWalletMonthlySeries } from '../src/data.js';
 
 test('初始数据包含全部模块', () => {
   const data = emptyData();
@@ -101,4 +101,9 @@ test('进行任务超过预期完成时间会标记逾期，完成后不再逾�
   assert.equal(isTaskOverdue({ status: '进行中', expectedAt: '2026-11-08T11:59' }, reference), true);
   assert.equal(isTaskOverdue({ status: '已完成', expectedAt: '2026-11-08T11:59' }, reference), false);
   assert.equal(isTaskOverdue({ status: '进行中', expectedAt: '2026-11-08T13:00' }, reference), false);
+});
+
+test('已完成任务如果晚于预期时间完成会被标记为逾期完成', () => {
+  assert.equal(isTaskLate({ status: '已完成', expectedAt: '2026-11-08T12:00', completedAt: '2026-11-08T12:01' }), true);
+  assert.equal(isTaskLate({ status: '已完成', expectedAt: '2026-11-08T12:00', completedAt: '2026-11-08T11:59' }), false);
 });

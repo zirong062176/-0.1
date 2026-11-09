@@ -10,6 +10,7 @@ const { navItems, strategy, getStats, escapeHtml } = await import('../src/app.js
 
 test('导航包含 PRD 要求的八个页面', () => {
   assert.deepEqual(navItems.map(x => x[0]), ['dashboard', 'daily', 'diet', 'fitness', 'work', 'wallet', 'reading', 'settings']);
+  assert.equal(navItems.find(x => x[0] === 'daily')[1], '关联全部计划');
 });
 
 test('A-E 战略分类文字完整', () => {

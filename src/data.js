@@ -59,6 +59,16 @@ export const isTaskOverdue = (task = {}, reference = new Date()) => {
   return Number.isFinite(timestamp) && timestamp < new Date(reference).getTime();
 };
 
+export const isTaskLate = (task = {}, reference = new Date()) => {
+  const deadline = task.expectedAt || task.expectedCompletionAt || task.expectedDate || task.dueDate;
+  if (!deadline) return false;
+  const normalized = String(deadline).length === 10 ? `${deadline}T23:59:59` : deadline;
+  const deadlineTime = new Date(normalized).getTime();
+  if (!Number.isFinite(deadlineTime)) return false;
+  if (task.status === '已完成') return Boolean(task.completedAt) && new Date(task.completedAt).getTime() > deadlineTime;
+  return deadlineTime < new Date(reference).getTime();
+};
+
 export const getWalletAssets = (records, manualRate = 3500) => {
   const cash = getWalletBalance(records);
   const loan = calcLoanBalances(records);

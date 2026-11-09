@@ -22,21 +22,26 @@ test('读后感想页显示记录内容和具体日期时间', () => {
 });
 
 test('工作页显示进行任务、进度和逾期标记', () => {
-  const html = renderWorkPage({ strategies, projects: [{ id: 'p1', title: '项目一' }], tasks: [{ id: 't1', title: '任务一', projectId: 'p1', projectName: '项目一', status: '进行中', expectedAt: '2020-01-01T10:00', progress: 30, strategy: 'A' }, { id: 't2', title: '已完成任务', status: '已完成', progress: 100, strategy: 'A' }] });
+  const html = renderWorkPage({ strategies, projects: [{ id: 'p1', title: '项目一', strategy: 'A' }], tasks: [{ id: 't1', title: '任务一', projectId: 'p1', projectName: '项目一', status: '进行中', expectedAt: '2020-01-01T10:00', progress: 30, strategy: 'A' }, { id: 't2', title: '已完成任务', status: '已完成', progress: 100, strategy: 'A' }] });
   assert.match(html, /进行任务/);
   assert.match(html, /任务进度 30%/);
   assert.match(html, /逾期/);
   assert.match(html, /进行任务 1 \/ 任务 2/);
   assert.match(html, /已完成任务 1/);
   assert.match(html, /已完成任务 1<\/a>/);
+  assert.match(html, /data-delete-project="p1"/);
+  assert.match(html, /strategy-progress-A/);
 });
 
 test('已完成任务页面独立显示，可编辑和撤回，不展示项目', () => {
-  const html = renderCompletedTasksPage({ strategies, tasks: [{ id: 't1', title: '任务一', projectId: 'p1', status: '已完成', progress: 100, completedAt: '2026-11-08T18:10:00.000Z' }] });
+  const html = renderCompletedTasksPage({ strategies, projects: [{ id: 'p1', title: '项目一' }], tasks: [{ id: 't1', title: '任务一', projectId: 'p1', status: '已完成', progress: 30, expectedAt: '2026-11-08T12:00', completedAt: '2026-11-08T18:10:00.000Z' }] });
   assert.match(html, /任务一/);
   assert.match(html, /编辑/);
   assert.match(html, /撤回/);
-  assert.doesNotMatch(html, /项目一/);
+  assert.doesNotMatch(html, /归属项目/);
+  assert.match(html, /项目一项目进度/);
+  assert.match(html, /任务进度 30%/);
+  assert.match(html, /task-overdue/);
 });
 
 test('已完成项目页显示项目进度和已完成任务详情', () => {

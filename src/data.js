@@ -48,7 +48,7 @@ export const getReadingProgress = (item = {}) => {
   return clampProgress(item.progress);
 };
 
-export const getProjectProgress = (projectId, tasks = []) => clampProgress(tasks.filter((task) => !task.deletedAt && task.projectId === projectId && task.status === '已完成').reduce((sum, task) => sum + clampProgress(task.progress), 0));
+export const getProjectProgress = (projectId, tasks = []) => clampProgress(tasks.filter((task) => !task.deletedAt && task.projectId === projectId && task.status === '已完成').reduce((sum, task) => sum + clampProgress(task.projectProgress ?? task.progress), 0));
 
 export const isTaskOverdue = (task = {}, reference = new Date()) => {
   if (!task || task.status === '已完成') return false;

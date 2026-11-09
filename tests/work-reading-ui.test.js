@@ -22,9 +22,10 @@ test('读后感想页显示记录内容和具体日期时间', () => {
 });
 
 test('工作页显示进行任务、进度和逾期标记', () => {
-  const html = renderWorkPage({ strategies, projects: [{ id: 'p1', title: '项目一', strategy: 'A' }], tasks: [{ id: 't1', title: '任务一', projectId: 'p1', projectName: '项目一', status: '进行中', expectedAt: '2020-01-01T10:00', progress: 30, strategy: 'A' }, { id: 't2', title: '已完成任务', status: '已完成', progress: 100, strategy: 'A' }] });
+  const html = renderWorkPage({ strategies, projects: [{ id: 'p1', title: '项目一', strategy: 'A' }], tasks: [{ id: 't1', title: '任务一', projectId: 'p1', projectName: '项目一', status: '进行中', expectedAt: '2020-01-01T10:00', progress: 30, projectProgress: 20, strategy: 'A' }, { id: 't2', title: '已完成任务', status: '已完成', progress: 100, strategy: 'A' }] });
   assert.match(html, /进行任务/);
   assert.match(html, /任务进度 30%/);
+  assert.match(html, /项目进度 20%/);
   assert.match(html, /逾期/);
   assert.match(html, /进行任务 1 \/ 任务 2/);
   assert.match(html, /已完成任务 1/);

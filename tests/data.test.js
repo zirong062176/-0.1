@@ -94,6 +94,7 @@ test('项目进度累计已完成任务进度并限制为100%', () => {
   ];
   assert.equal(getProjectProgress('p1', tasks), 100);
   assert.equal(getProjectProgress('p2', tasks), 0);
+  assert.equal(getProjectProgress('p3', [{ projectId: 'p3', status: '已完成', progress: 90, projectProgress: 15 }]), 15);
 });
 
 test('进行任务超过预期完成时间会标记逾期，完成后不再逾期', () => {

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { emptyData, MemoryStore, LocalStore, makeBackup, validateBackup, applyWalletRecord, getWalletBalance, calcLoanBalance, calcLoanBalances, getWalletAssets, getProjectProgress, getReadingProgress, isTaskLate, isTaskOverdue, getWalletCategoryBreakdown, getWalletMonthlySeries } from '../src/data.js';
+import { emptyData, MemoryStore, LocalStore, makeBackup, validateBackup, applyWalletRecord, getWalletBalance, calcLoanBalance, calcLoanBalances, getWalletAssets, getProjectProgress, getReadingProgress, isTaskLate, isTaskOverdue, getTaskDelayMs, classifyTaskTiming, getWorkExecutionAnalytics, getWalletCategoryBreakdown, getWalletMonthlySeries } from '../src/data.js';
 
 test('初始数据包含全部模块', () => {
   const data = emptyData();
@@ -107,4 +107,24 @@ test('进行任务超过预期完成时间会标记逾期，完成后不再逾�
 test('已完成任务如果晚于预期时间完成会被标记为逾期完成', () => {
   assert.equal(isTaskLate({ status: '已完成', expectedAt: '2026-11-08T12:00', completedAt: '2026-11-08T12:01' }), true);
   assert.equal(isTaskLate({ status: '已完成', expectedAt: '2026-11-08T12:00', completedAt: '2026-11-08T11:59' }), false);
+});
+
+test('工作执行分析会区分轻微拖延、严重拖延和逾期原因', () => {
+  const tasks = [
+    { strategy: 'A', status: '已完成', expectedAt: '2026-11-09T10:00', completedAt: '2026-11-09T11:30' },
+    { strategy: 'A', status: '已完成', expectedAt: '2026-11-08T10:00', completedAt: '2026-11-09T11:00' },
+    { strategy: 'B', status: '已完成', expectedAt: '2026-11-09T10:00', completedAt: '2026-11-09T12:00', lateReasonType: '原因', lateReason: '临时有事' },
+    { strategy: 'B', status: '进行中', expectedAt: '2020-01-01T10:00' }
+  ];
+  assert.equal(getTaskDelayMs(tasks[1]), 25 * 60 * 60 * 1000);
+  assert.equal(classifyTaskTiming(tasks[0]), 'minor');
+  assert.equal(classifyTaskTiming(tasks[1]), 'severe');
+  assert.equal(classifyTaskTiming(tasks[2]), 'reason');
+  const result = getWorkExecutionAnalytics(tasks, new Date('2026-11-10T12:00:00'));
+  assert.equal(result.completed, 3);
+  assert.equal(result.activeOverdue, 1);
+  assert.equal(result.counts.minor, 1);
+  assert.equal(result.counts.severe, 1);
+  assert.equal(result.counts.reason, 1);
+  assert.equal(result.byStrategy.A.completed, 2);
 });

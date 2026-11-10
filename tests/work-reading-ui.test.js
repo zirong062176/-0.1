@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { renderCompletedProjectsPage, renderCompletedTasksPage, renderReadingPage, renderReadingReviewPage, renderWorkPage } from '../src/work-reading-ui.js';
+import { renderCompletedProjectsPage, renderCompletedTasksPage, renderReadingPage, renderReadingReviewPage, renderWorkPage, workCompletionForm, workTaskForm } from '../src/work-reading-ui.js';
 
 const strategies = { A: '需要做', B: '应该做', C: '做了也不会错', D: '可以接受别人去做', E: '可以省略不做' };
 
@@ -35,7 +35,7 @@ test('工作页显示进行任务、进度和逾期标记', () => {
 });
 
 test('已完成任务页面独立显示，可编辑和撤回，不展示项目', () => {
-  const html = renderCompletedTasksPage({ strategies, projects: [{ id: 'p1', title: '项目一' }], tasks: [{ id: 't1', title: '任务一', projectId: 'p1', status: '已完成', progress: 30, expectedAt: '2026-11-08T12:00', completedAt: '2026-11-08T18:10:00.000Z' }] });
+  const html = renderCompletedTasksPage({ strategies, projects: [{ id: 'p1', title: '项目一' }], tasks: [{ id: 't1', title: '任务一', projectId: 'p1', status: '已完成', progress: 30, expectedAt: '2026-11-08T12:00', submitAt: '2026-11-08T09:00', completedAt: '2026-11-08T18:10:00.000Z', lateReasonType: '原因', lateReason: '临时有事' }] });
   assert.match(html, /任务一/);
   assert.match(html, /编辑/);
   assert.match(html, /撤回/);
@@ -43,6 +43,23 @@ test('已完成任务页面独立显示，可编辑和撤回，不展示项目',
   assert.match(html, /项目一项目进度/);
   assert.match(html, /任务进度 30%/);
   assert.match(html, /task-overdue/);
+  assert.match(html, /提交时间/);
+  assert.match(html, /原因：临时有事/);
+});
+
+test('完成任务表单包含逾期原因选择', () => {
+  const html = workCompletionForm({ id: 't1', title: '任务一', progress: 20 });
+  assert.match(html, /name="lateReasonType"/);
+  assert.match(html, /原因/);
+  assert.match(html, /拖延/);
+  assert.match(html, /lateReason/);
+});
+
+test('编辑已完成任务可以修改完成时间和逾期原因', () => {
+  const html = workTaskForm({ id: 't1', title: '任务一', status: '已完成', completedAt: '2026-11-10T16:50', lateReasonType: '拖延' }, [], strategies, '2026-11-10');
+  assert.match(html, /name="completedAt"/);
+  assert.match(html, /name="lateReasonType"/);
+  assert.match(html, /value="拖延"/);
 });
 
 test('已完成项目页显示项目进度和已完成任务详情', () => {

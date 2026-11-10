@@ -69,6 +69,38 @@ export const isTaskLate = (task = {}, reference = new Date()) => {
   return deadlineTime < new Date(reference).getTime();
 };
 
+export const getTaskDelayMs = (task = {}) => {
+  const deadline = task.expectedAt || task.expectedCompletionAt || task.expectedDate || task.dueDate;
+  const completedAt = task.completedAt;
+  if (!deadline || !completedAt) return 0;
+  const deadlineTime = new Date(String(deadline).length === 10 ? `${deadline}T23:59:59` : deadline).getTime();
+  const completedTime = new Date(completedAt).getTime();
+  return Number.isFinite(deadlineTime) && Number.isFinite(completedTime) ? Math.max(0, completedTime - deadlineTime) : 0;
+};
+
+export const classifyTaskTiming = (task = {}) => {
+  const delayMs = getTaskDelayMs(task);
+  if (task.lateReasonType === '拖延') return 'procrastination';
+  if (task.lateReasonType === '原因') return 'reason';
+  if (delayMs >= 24 * 60 * 60 * 1000) return 'severe';
+  if (delayMs >= 60 * 60 * 1000) return 'minor';
+  return 'normal';
+};
+
+export const getWorkExecutionAnalytics = (tasks = [], reference = new Date()) => {
+  const rows = tasks.filter((task) => !task.deletedAt);
+  const completed = rows.filter((task) => task.status === '已完成');
+  const activeOverdue = rows.filter((task) => isTaskOverdue(task, reference));
+  const counts = { normal: 0, minor: 0, severe: 0, reason: 0, procrastination: 0 };
+  let delayMs = 0;
+  completed.forEach((task) => { const kind = classifyTaskTiming(task); counts[kind] += 1; delayMs += getTaskDelayMs(task); });
+  const byStrategy = Object.fromEntries(['A', 'B', 'C', 'D', 'E'].map((key) => {
+    const group = rows.filter((task) => task.strategy === key); const done = group.filter((task) => task.status === '已完成');
+    return [key, { total: group.length, completed: done.length, completionRate: group.length ? done.length / group.length * 100 : 0, normal: done.filter((task) => classifyTaskTiming(task) === 'normal').length, late: done.filter((task) => classifyTaskTiming(task) !== 'normal').length, overdue: group.filter((task) => isTaskOverdue(task, reference)).length }];
+  }));
+  return { total: rows.length, completed: completed.length, activeOverdue: activeOverdue.length, completionRate: rows.length ? completed.length / rows.length * 100 : 0, normalRate: completed.length ? counts.normal / completed.length * 100 : 0, lateRate: completed.length ? (completed.length - counts.normal) / completed.length * 100 : 0, counts, averageDelayMs: completed.length ? delayMs / completed.length : 0, maxDelayMs: completed.reduce((max, task) => Math.max(max, getTaskDelayMs(task)), 0), byStrategy };
+};
+
 export const getWalletAssets = (records, manualRate = 3500) => {
   const cash = getWalletBalance(records);
   const loan = calcLoanBalances(records);

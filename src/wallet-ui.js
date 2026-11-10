@@ -39,7 +39,7 @@ export function renderWalletPage({ records, settings, month, filter = 'all' }) {
   const loans = activeRecords.filter((r) => ['借出', '还入'].includes(r.type));
   const loanPeople = [...new Set(loans.map((r) => r.consumer || '未命名'))];
   const categories = settings.walletCategories || [];
-  return `<div class="module-header wallet-header"><div><span class="eyebrow">PERSONAL FINANCE</span><h2>钱包流水</h2><p>所有收入、支出、兑换和借还款，集中在一张清晰的账本里。</p></div>${button('+ 添加流水', 'new-wallet', 'primary')}</div>
+  return `<div class="module-header wallet-header"><div><span class="eyebrow">PERSONAL FINANCE</span><h2>钱包流水</h2><p>所有收入、支出、兑换和借还款，集中在一张清晰的账本里。</p></div><div class="module-actions">${button('钱包年度分析 →', 'wallet-stats')}${button('+ 添加流水', 'new-wallet', 'primary')}</div></div>
     <div class="wallet-summary-grid">
       <div class="wallet-stat income"><span>本月收入</span><b>${money(income)} K</b><small>+$ ${money(monthRows.filter(r => r.type === '收入').reduce((n, r) => n + Number(r.usd || 0), 0))}</small></div>
       <div class="wallet-stat expense"><span>本月支出</span><b>${money(expense)} K</b><small>-$ ${money(monthRows.filter(r => r.type === '支出').reduce((n, r) => n + Number(r.usd || 0), 0))}</small></div>

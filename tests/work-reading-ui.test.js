@@ -62,6 +62,13 @@ test('编辑已完成任务可以修改完成时间和逾期原因', () => {
   assert.match(html, /value="拖延"/);
 });
 
+test('工作任务选择项目后自动使用项目战略分类', () => {
+  const html = workTaskForm({ title: 'TikTok任务', projectId: 'p1' }, [{ id: 'p1', title: 'TikTok运用', strategy: 'B' }], strategies, '2026-11-13');
+  assert.match(html, /value="B" selected/);
+  assert.match(html, /select name="strategy" disabled/);
+  assert.match(html, /跟随所属项目/);
+});
+
 test('已完成项目页显示项目进度和已完成任务详情', () => {
   const html = renderCompletedProjectsPage({ projects: [{ id: 'p1', title: '项目一' }], tasks: [{ id: 't1', title: '任务一', projectId: 'p1', status: '已完成', progress: 100, completedAt: '2026-11-08T18:10:00.000Z' }] });
   assert.match(html, /项目一/);

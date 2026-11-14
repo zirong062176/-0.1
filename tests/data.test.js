@@ -73,10 +73,10 @@ test('钱包分类分析会按月份计算金额和占比', () => {
   ]);
 });
 
-test('钱包月度趋势返回连续六个月收入支出', () => {
+test('钱包月度趋势返回连续六个月完整资金流向', () => {
   const series = getWalletMonthlySeries([{ date: '2026-11-01', type: '收入', mmk: 500 }, { date: '2026-11-02', type: '支出', mmk: 200 }], '2026-11', 3);
   assert.deepEqual(series.map(x => x.month), ['2026-09', '2026-10', '2026-11']);
-  assert.deepEqual(series[2], { month: '2026-11', income: 500, expense: 200, balance: 300 });
+  assert.deepEqual(series[2], { month: '2026-11', income: 500, expense: 200, loanOut: 0, loanIn: 0, exchange: 0, balance: 300 });
 });
 
 test('阅读进度优先按当前页和总页数计算', () => {

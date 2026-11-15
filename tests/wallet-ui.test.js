@@ -28,4 +28,7 @@ test('钱包年度分析统一统计五类资金并单独分析兑换', () => {
   assert.match(html, /\+270/);
   assert.match(html, /annual-loan-out/);
   assert.match(html, /annual-exchange/);
+  const usdHtml = renderWalletStatsPage({ year: 2026, currency: 'usd', settings: { manualRate: 3500 }, records: [{ date: '2026-11-01', type: '收入', mmk: 3500, usd: 1 }] });
+  assert.match(usdHtml, /当前单位：\$/);
+  assert.match(usdHtml, /data-wallet-flow-currency="usd"/);
 });
